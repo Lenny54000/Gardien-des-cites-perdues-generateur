@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Personnage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #444;
+            margin-bottom: 30px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="number"] {
+            padding: 5px;
+            margin-right: 10px;
+            width: 60px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        .result h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .result ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .result ul li {
+            padding: 5px 0;
+        }
+        .download-btn {
+            margin-top: 10px;
+            background-color: #28a745;
+        }
+        .download-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Générateur de Fiches Personnage</h1>
+        <div id="inputForm" class="section">
+            <label for="numCharacters">Combien de personnages voulez-vous générer ?</label>
+            <input type="number" id="numCharacters" min="1" value="1">
+            <button onclick="genererPersonnages()">Générer</button>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        function getRandomElement(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function generateTalents() {
+            const talents = [
+                'Chargeur', 'Discerneur', 'Éclipseur', 'Empathe', 'Enjôleur', 'Flasheur', 'Givreur', 
+                'Hydrokinésiste', 'Hypnotiseur', 'Installateur', 'Invocateur', 'Optimisateur', 
+                'Phaseur', 'Polyglotte', 'Psionipathe', 'Pyrokinésiste', 'Rafaleur', 'Technopathe', 
+                'Télépathe', 'Téléporteur', 'Ténébreux', 'Vociférateur'
+            ];
+            let selected = [];
+            for (let i = 0; i < 3; i++) {
+                const talent = getRandomElement(talents);
+                if (!selected.includes(talent)) {
+                    selected.push(talent);
+                }
+                if (talent === 'Polyglotte') {
+                    if (selected.length === 1) {
+                        const secondTalent = getRandomElement(talents.filter(t => t !== 'Polyglotte'));
+                        selected.push(secondTalent);
+                    }
+                }
+                if (Math.random() < 1/23) {
+                    continue;
+                }
+                break;
+            }
+            return selected;
+        }
+
+        function generateCapacites() {
+            const capacites = [
+                'Canalisation', 'Clignotement', 'Lévitation', 'Régulation du souffle', 
+                'Régulation de la température corporelle', 'Répression de l\'appétit', 
+                'Télékinésie', 'Vision nocturne'
+            ];
+            let result = {};
+            capacites.forEach(capa => {
+                result[capa] = Math.floor(Math.random() * 21);
+            });
+            return result;
+        }
+
+        function calculerNexus(niveau) {
+            return niveau >= 5 ? 100 : niveau * 20;
+        }
+
+        function calculerListesRecues(niveau) {
+            if (niveau < 4) {
+                return 0; // Pas de statut "Enregistrée" avant le niveau 4
+            }
+
+            const age = niveau + 11; // Le niveau est basé sur l'âge, niveau 1 = 12 ans
+            if (age < 15) {
+                return 0; // Pas d'enregistrement avant 15 ans
+            }
+
+            const moisDepuisEnregistrement = (age - 15) * 12;
+            if (moisDepuisEnregistrement < 12) {
+                return 0; // Pas de liste reçue avant 1 an après l'enregistrement
+            }
+
+            return Math.min(5, Math.floor((moisDepuisEnregistrement - 12) / 1)); // Une liste par mois après 1 an
+        }
+
+        function genererPersonnage(ageBase, index) {
+            const talents = generateTalents();
+            const capacites = generateCapacites();
+            const age = ageBase + Math.floor(Math.random() * 3) - 1; // Âge ± 1 an par rapport à ageBase
+            const niveau = Math.min(6, Math.max(1, age - 11)); // Calcule le niveau en fonction de l'âge
+            const populariteOptions = ['Conseiller', 'Très influent', 'Influent', 'Normal', 'Peu influent'];
+            const popularite = getRandomElement(populariteOptions);
+            const nexus = calculerNexus(niveau);
+            let statutMatrimonial = 'Non enregistrée';
+            let listesRecues = 0;
+
+            if (age >= 15) {
+                statutMatrimonial = getRandomElement(['Non enregistrée', 'Enregistrée']);
+                if (statutMatrimonial === 'Enregistrée') {
+                    listesRecues = calculerListesRecues(niveau);
+                }
+            }
+            
+            let resultHtml = `<div class="result" id="character-${index}"><h2>Personnage ${index}</h2>`;
+            resultHtml += `<p><strong>Âge :</strong> ${age} ans</p>`;
+            resultHtml += `<p><strong>Talents :</strong> ${talents.join(', ')}</p>`;
+            resultHtml += `<p><strong>Niveau de maîtrise des capacités :</strong></p><ul>`;
+            for (let [capa, note] of Object.entries(capacites)) {
+                resultHtml += `<li>${capa} : ${note}/20</li>`;
+            }
+            resultHtml += `</ul>`;
+            resultHtml += `<p><strong>Niveau d'études :</strong> ${niveau}</p>`;
+            resultHtml += `<p><strong>Popularité et influence de la famille :</strong> ${popularite}</p>`;
+            resultHtml += `<p><strong>Nexus :</strong> ${nexus}%</p>`;
+            resultHtml += `<p><strong>Statut matrimonial :</strong> ${statutMatrimonial}</p>`;
+            if (statutMatrimonial === 'Enregistrée') {
+                resultHtml += `<p><strong>Nombre de listes reçues :</strong> ${listesRecues}</p>`;
+            }
+            resultHtml += `<button class="download-btn" onclick="telechargerPDF(${index})">Télécharger en PDF</button>`;
+            resultHtml += `</div>`;
+            
+            return resultHtml;
+        }
+
+        function genererPersonnages() {
+            const numCharacters = parseInt(document.getElementById('numCharacters').value);
+            const ageBase = Math.floor(Math.random() * 6) + 12; // Age de base entre 12 et 17 ans
+            let resultsHtml = '';
+            
+            for (let i = 0; i < numCharacters; i++) {
+                resultsHtml += genererPersonnage(ageBase, i + 1);
+            }
+
+            document.getElementById('results').innerHTML = resultsHtml;
+        }
+
+        function telechargerPDF(index) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const characterDiv = document.getElementById(`character-${index}`);
+            doc.text(characterDiv.innerText, 10, 10);
+            doc.save(`fiche_personnage_${index}.pdf`);
+        }
+    </script>
+</body>
+</html>
+
